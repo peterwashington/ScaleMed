@@ -1,16 +1,15 @@
 package edu.rice.moodreminder;
 
-import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.ActionBarActivity;
-import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,67 +22,152 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 
 /**
  * User interface for asking the user to input their activity and mood levels on a slider.
  * Submit button stores the data locally and immediately uploads it to the server in the background.
- * Last modified 11/13/2014
  *
- * @author Kevin Lin
+ * @author Kevin Lin, Anant Tibrewal
  * @since 10/23/2014
  */
+
 public class MoodReminderActivity extends ActionBarActivity {
 
-    AlarmReceiver alarm = new AlarmReceiver();
-    public static String UUID;
-    public static DatabaseHelper dbHelper;
-    private static SQLiteDatabase mDatabase;
+    public static SQLiteDatabase mDatabase;
+    public static int uploadData = 0;
+    public static int doFindView;
+    public static ArrayList<Integer> seekBars;
+    public static int filled;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //alarmSet();
         //setContentView(R.layout.activity_mood_reminder);
 
-        // Create UI elements
-        // Start with LinearLayout
-        LinearLayout linearLayout = new LinearLayout(this);
-        linearLayout.setPadding(10, 10, 10, 10);
-        linearLayout.setId(0);
-        linearLayout.setOrientation(LinearLayout.VERTICAL);
-        // Add a TextView and SeekBar for each parameter set in the configuration file
+        RelativeLayout relativeLayout = new RelativeLayout(this);
+        relativeLayout.setId(0);
+        relativeLayout.setPadding(10, 10, 10, 10);
 
-        for (String parameter : Config.questions) {
-            TextView tv = new TextView(this);
-            tv.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            tv.setText(parameter);
-            tv.setTextSize(20);
-            tv.setPadding(10, 10, 10, 10);
-            linearLayout.addView(tv);
-            SeekBar sb = new SeekBar(this);
-            sb.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            linearLayout.addView(sb);
-        }
-        // Create submit button
+        // Add a TextView and SeekBar for each parameter set in the configuration file
+        int x = 0;
+        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        relativeLayout.setLayoutParams(lp);
+
+        TextView tv = new TextView(this);
+        tv.setId(R.id.id1);
+        tv.setLayoutParams(lp);
+        tv.setText(Config.questions[0]);
+        tv.setTextSize(20);
+        tv.setPadding(10, 10, 10, 10);
+        relativeLayout.addView(tv);
+
+        RelativeLayout.LayoutParams lp2 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        lp2.addRule(RelativeLayout.BELOW,tv.getId());
+        SeekBar sb = new SeekBar(this);
+        sb.setId(R.id.id2);
+        sb.setLayoutParams(lp2);
+        relativeLayout.addView(sb);
+
+        RelativeLayout.LayoutParams lp3 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        lp3.addRule(RelativeLayout.BELOW,sb.getId());
+        TextView t1 = new TextView(this);
+        t1.setId(R.id.id3);
+        t1.setLayoutParams(lp3);
+        t1.setText(Config.labels[x]);
+        t1.setTextSize(15);
+        t1.setPadding(10, 0, 10, 5);
+        relativeLayout.addView(t1);
+
+        x++;
+
+        RelativeLayout.LayoutParams lp4 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        lp4.addRule(RelativeLayout.ALIGN_PARENT_RIGHT,t1.getId());
+        lp4.addRule(RelativeLayout.BELOW, sb.getId());
+        TextView t2 = new TextView(this);
+        t2.setId(R.id.id4);
+        t2.setLayoutParams(lp4);
+        t2.setText(Config.labels[x]);
+        t2.setTextSize(15);
+        t2.setPadding(10, 0, 10, 5);
+
+        relativeLayout.addView(t2);
+
+        RelativeLayout.LayoutParams lp5 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        x++;
+        TextView tv2 = new TextView(this);
+        tv2.setId(R.id.id6);
+        tv2.setLayoutParams(lp5);
+        tv2.setText(Config.questions[1]);
+        tv2.setTextSize(20);
+        tv2.setPadding(10, 60, 10, 10);
+        lp5.addRule(RelativeLayout.BELOW, t2.getId());
+        relativeLayout.addView(tv2);
+
+        RelativeLayout.LayoutParams lp6 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        lp6.addRule(RelativeLayout.BELOW,tv2.getId());
+        SeekBar sb2 = new SeekBar(this);
+        sb2.setId(R.id.id7);
+        sb2.setLayoutParams(lp6);
+        relativeLayout.addView(sb2);
+
+        RelativeLayout.LayoutParams lp7 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        lp7.addRule(RelativeLayout.BELOW,sb2.getId());
+        TextView t3 = new TextView(this);
+        t3.setId(R.id.id8);
+        t3.setLayoutParams(lp7);
+        t3.setText(Config.labels[x]);
+        t3.setTextSize(15);
+        t3.setPadding(10, 0, 10, 45);
+        relativeLayout.addView(t3);
+
+        x++;
+
+        RelativeLayout.LayoutParams lp8 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+
+        lp8.addRule(RelativeLayout.ALIGN_PARENT_RIGHT,t3.getId());
+        lp8.addRule(RelativeLayout.BELOW, sb2.getId());
+        TextView t4 = new TextView(this);
+        t4.setId(R.id.id9);
+        t4.setLayoutParams(lp8);
+
+        t4.setText(Config.labels[x]);
+        t4.setTextSize(15);
+        t4.setPadding(10, 0, 10, 45);
+
+        relativeLayout.addView(t4);
+
+        RelativeLayout.LayoutParams lp9 = new RelativeLayout.LayoutParams(
+                RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         Button submit = new Button(this);
-        submit.setLayoutParams(new ActionBar.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        submit.setId(R.id.id10);
+        lp9.addRule(RelativeLayout.BELOW,t4.getId());
+        submit.setLayoutParams(lp9);
         submit.setText("Submit");
         submit.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                doFindView = 1;
                 new Upload().execute();
             }
         });
-        linearLayout.addView(submit);
-        setContentView(linearLayout);
-
-        //MainActivity main = new MainActivity();
-        //main.alarmSet();
+        relativeLayout.addView(submit);
+        setContentView(relativeLayout);
     }
 
 
@@ -96,32 +180,6 @@ public class MoodReminderActivity extends ActionBarActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         return super.onOptionsItemSelected(item);
-    }
-
-    public void alarmSet(){
-        Config my_task = new Config();
-        my_task.startTask();
-
-        // Get the device UUID.
-        final TelephonyManager tm = (TelephonyManager)getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
-        UUID = tm.getDeviceId();
-        Log.w("tag", "start alarm");
-        // Enable the periodic alarm.
-        alarm.setAlarm(this);
-
-        // Initialize database helper
-        dbHelper = new DatabaseHelper(getApplicationContext(), getDate());
-
-        // Open mood reminder activity
-        //startActivity(new Intent(MainActivity.this, MoodReminderActivity.class));
-    }
-
-    @SuppressLint("SimpleDateFormat")
-    public static String getDate()
-    {
-        Date today = new Date();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yy:HH:mm:SS");
-        return dateFormat.format(today);
     }
 
     public static void close()
@@ -186,11 +244,26 @@ public class MoodReminderActivity extends ActionBarActivity {
     }
 
     /**
+     * Checks if the device has Internet connection.
+     *
+     * @return <code>true</code> if the phone is connected to the Internet.
+     */
+    public boolean hasConnection() {
+        ConnectivityManager cm = (ConnectivityManager)
+                getSystemService(this.CONNECTIVITY_SERVICE);
+        NetworkInfo ni = cm.getActiveNetworkInfo();
+        if (null == ni){
+            return false;
+        }
+        return ni.isConnectedOrConnecting();
+    }
+
+    /**
      * Stores the mood and activity levels in a local database, then uploads it to the server.
      *
      * Asynctask to prevent network activity on main thread.
      */
-    private class Upload extends AsyncTask<Void, Void, Void> {
+    public class Upload extends AsyncTask<Void, Void, Void> {
 
         @Override
         protected void onPreExecute() {
@@ -198,32 +271,67 @@ public class MoodReminderActivity extends ActionBarActivity {
         }
         @Override
         protected Void doInBackground(Void... params) {
-            ArrayList<Integer> seekBars = new ArrayList<Integer>();
-            for (int i = 0; i < ((LinearLayout)findViewById(0)).getChildCount(); i++)
-                if (((LinearLayout)findViewById(0)).getChildAt(i) instanceof SeekBar)
-                    seekBars.add(((SeekBar)((LinearLayout) findViewById(0)).getChildAt(i)).getProgress());
+            int icount = -1;
+            /*if(mDatabase != null) {
+                Log.i("tag", "database not null");
+                String count = "SELECT count(*) FROM table";
+                Cursor mcursor = mDatabase.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+                mcursor.moveToFirst();
+                icount = mcursor.getInt(0);
+            }*/
+            if((filled==0) || mDatabase == null) {
 
-            // Store in local db
-            ContentValues values = new ContentValues();
-            for (int i = 0; i < Config.parameters.length; i++) {
-                values.put(Config.parameters[i], seekBars.get(i));
-                Log.v("Parameter values", Config.parameters[i] + " " + seekBars.get(i).toString());
+                Log.i("tag", "database empty");
+                if(doFindView == 1) {
+                    //doFindView = 0;
+                    seekBars = new ArrayList<Integer>();
+                    for (int i = 0; i < ((RelativeLayout) findViewById(0)).getChildCount(); i++)
+                        if (((RelativeLayout) findViewById(0)).getChildAt(i) instanceof SeekBar)
+                            seekBars.add(((SeekBar) ((RelativeLayout) findViewById(0)).getChildAt(i)).getProgress());
+                }
+
+                filled = 1;
+                /*if((icount>0)){
+                    Log.v("tag", "database not empty");
+                }*/
+                // Store in local db
+                ContentValues values = new ContentValues();
+                for (int i = 0; i < Config.parameters.length; i++) {
+                    values.put(Config.parameters[i], seekBars.get(i));
+                    Log.v("Parameter values", Config.parameters[i] + " " + seekBars.get(i).toString());
+                }
+                values.put(DatabaseHelper.COLUMN_TIMESTAMP, getTimestamp());
+                waitUntilAvailable();
+                mDatabase = MainActivity.dbHelper.getWritableDatabase();
+                mDatabase.insert(Config.TABLE_NAME, null, values);
+                Log.i("tag", "after insert");
             }
-            values.put(DatabaseHelper.COLUMN_TIMESTAMP, getTimestamp());
-            waitUntilAvailable();
-            mDatabase = MainActivity.dbHelper.getWritableDatabase();
-            mDatabase.insert(Config.TABLE_NAME, null, values);
 
+            Log.i("tag", "afterinsert");
             // Upload
-            if (Uploader.upload(mDatabase, MainActivity.UUID)) {
-                cleanTables();
-                close();
+            CheckConnectivity checkConnectivity = new CheckConnectivity();
+            Log.i("tag", "connect "+checkConnectivity.connected);
+            if (checkConnectivity.connected) {
+                Log.i("tag","submitted");
+                uploadData = 0;
+                if (Uploader.upload(mDatabase, MainActivity.UUID)) {
+                    cleanTables();
+                    close();
+                    filled=0;
+                }
+            } else {
+                uploadData = 1;
+                Log.i("tag", "uploadData " + uploadData);
             }
+
             return null;
         }
         @Override
         protected void onPostExecute(Void result) {
-            showToast("Your response has been submitted!", 0);
+            if(doFindView == 1) {
+                showToast("Your response has been submitted!", 0);
+                doFindView = 0;
+            }
         }
     }
 

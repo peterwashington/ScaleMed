@@ -2,7 +2,6 @@ package edu.rice.moodreminder;
 
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
@@ -10,13 +9,9 @@ import android.util.Log;
 import java.util.Calendar;
 
 /**
- * Automatically re-sets the alarm after device reboot.
- * Requires BOOT_COMPLETED permission for obvious reasons.
- *
- * @author Kevin Lin, Anant Tibrewal
- * @since 10/23/2014
+ * Created by anant_000 on 7/14/2015.
  */
-public class BootReceiver extends BroadcastReceiver {
+public class InternetBootReceiver extends BootReceiver {
     AlarmReceiver alarm = new AlarmReceiver();
     MainActivity mainActivity = new MainActivity();
     public AlarmManager alarmManager;
@@ -28,13 +23,13 @@ public class BootReceiver extends BroadcastReceiver {
         {
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
-            alarmIntent = new Intent(context, AlarmReceiver.class);
+            alarmIntent = new Intent(context, InternetAlarmReceiver.class);
             pendingIntent = PendingIntent.getBroadcast(context, 0, alarmIntent, 0);
 
             Calendar alarmStartTime = Calendar.getInstance();
-            alarmStartTime.add(Calendar.MINUTE, 60);
-            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, alarmStartTime.getTimeInMillis(), AlarmManager.INTERVAL_DAY, pendingIntent);
-            Log.i("tag", "Alarms set every two minutes.");
+            alarmStartTime.add(Calendar.MINUTE, 1);
+            alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, alarmStartTime.getTimeInMillis(), getInterval(), pendingIntent);
+            Log.i("tag", "Alarms set every minute.");
         }
     }
     private int getInterval(){
